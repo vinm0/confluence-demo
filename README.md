@@ -27,7 +27,7 @@ AI Generated Code: focused on visual presentation
 
 ## AI Generated Content
 
-The majority of this codebase — including the Next.js app routes and pages (`app/`), UI components (`components/`), and API routes (`app/api/`) — was generated with AI assistance (Claude Code).
+The majority of this codebase — including the Next.js app routes and pages ([app/](./app/)), UI components ([components/](./components/)), and API routes ([app/api/](./app/api/)) was generated with AI assistance (Claude Code).
 
 ## Original Content
 
