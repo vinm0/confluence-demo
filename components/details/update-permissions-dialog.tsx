@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { ShieldPlusIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -23,9 +25,81 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export function UpdatePermissionsDialog() {
+interface UpdatePermissionsDialogProps {
+  /** Set when updating permissions for a workspace (calls PUT /api/spaces). */
+  spaceId?: string;
+  /** Set when updating permissions for a page (calls PUT /api/pages). */
+  pageId?: string;
+}
+
+type PrincipalType = "user" | "group";
+type Role = "admin" | "editor" | "viewer";
+
+export function UpdatePermissionsDialog({ spaceId, pageId }: UpdatePermissionsDialogProps) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [principalType, setPrincipalType] = useState<PrincipalType>("user");
+  const [principal, setPrincipal] = useState("");
+  const [role, setRole] = useState<Role>("viewer");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      let res: Response;
+
+      if (spaceId) {
+        const permissions =
+          role === "admin"
+            ? ["read", "create", "update", "delete"]
+            : role === "editor"
+              ? ["read", "create", "update"]
+              : ["read"];
+
+        res = await fetch("/api/spaces", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            principalType === "user"
+              ? { spaceId, adminId: principal }
+              : { spaceId, groupId: principal, permissions }
+          ),
+        });
+      } else if (pageId) {
+        const operations = role === "viewer" ? ["read"] : ["read", "update"];
+
+        res = await fetch("/api/pages", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            principalType === "user"
+              ? { pageId, accountId: principal, operations }
+              : { pageId, groupId: principal, operations }
+          ),
+        });
+      } else {
+        throw new Error("Missing spaceId or pageId for permission update.");
+      }
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? "Failed to update permissions.");
+      }
+      setPrincipal("");
+      setOpen(false);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update permissions.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
           <Button variant="outline">
@@ -42,10 +116,10 @@ export function UpdatePermissionsDialog() {
           </DialogDescription>
         </DialogHeader>
 
-        <form className="grid gap-4">
+        <form className="grid gap-4" onSubmit={handleSubmit}>
           <div className="grid gap-1.5">
             <Label htmlFor="permission-type">Principal type</Label>
-            <Select defaultValue="user">
+            <Select value={principalType} onValueChange={(v) => setPrincipalType(v as PrincipalType)}>
               <SelectTrigger id="permission-type" className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -56,12 +130,21 @@ export function UpdatePermissionsDialog() {
             </Select>
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="permission-principal">User or group</Label>
-            <Input id="permission-principal" name="principal" placeholder="Search by name or email" />
+            <Label htmlFor="permission-principal">
+              {principalType === "user" ? "User account ID" : "Group ID"}
+            </Label>
+            <Input
+              id="permission-principal"
+              name="principal"
+              placeholder={principalType === "user" ? "Confluence account ID" : "Confluence group ID"}
+              value={principal}
+              onChange={(e) => setPrincipal(e.target.value)}
+              required
+            />
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="permission-role">Role</Label>
-            <Select defaultValue="viewer">
+            <Select value={role} onValueChange={(v) => setRole(v as Role)}>
               <SelectTrigger id="permission-role" className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -72,15 +155,17 @@ export function UpdatePermissionsDialog() {
               </SelectContent>
             </Select>
           </div>
-        </form>
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
-        <DialogFooter>
-          <DialogClose render={<Button type="button" variant="outline" />}>
-            Cancel
-          </DialogClose>
-          {/* TODO: wire up permission update mutation */}
-          <Button type="submit">Save Changes</Button>
-        </DialogFooter>
+          <DialogFooter>
+            <DialogClose render={<Button type="button" variant="outline" />}>
+              Cancel
+            </DialogClose>
+            <Button type="submit" disabled={submitting || !principal}>
+              {submitting ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

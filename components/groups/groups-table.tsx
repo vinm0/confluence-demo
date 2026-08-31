@@ -1,7 +1,3 @@
-import { Trash2Icon } from "lucide-react";
-
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -10,53 +6,41 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { EditGroupDialog } from "@/components/groups/edit-group-dialog";
-import { GroupPermissionsDialog } from "@/components/groups/group-permissions-dialog";
-import { mockGroups } from "@/lib/mock-data";
+import { AddUserToGroupDialog } from "@/components/groups/add-user-to-group-dialog";
+import { GroupMembersDialog } from "@/components/groups/group-members-dialog";
+import type { Group } from "@/lib/confluence/groups";
 
-const roleVariant = {
-  admin: "default",
-  editor: "secondary",
-  viewer: "outline",
-} as const;
-
-export function GroupsTable() {
+// Confluence's group-list API only returns id/name (no description or member count),
+// and edit/permissions/remove actions here expect the mock ConfluenceGroup shape from
+// lib/mock-data.ts, not this real Group class — re-add those once that's reconciled.
+export function GroupsTable({ groups = [] }: { groups: Group[] }) {
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Group</TableHead>
-          <TableHead>Description</TableHead>
-          <TableHead>Members</TableHead>
-          <TableHead>Default role</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead>ID</TableHead>
+          <TableHead>Users</TableHead>
+          <TableHead>Add User</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {mockGroups.map((group) => (
+        {groups.length === 0 && (
+          <TableRow>
+            <TableCell colSpan={4} className="text-center text-muted-foreground">
+              No groups found.
+            </TableCell>
+          </TableRow>
+        )}
+        {groups.map((group) => (
           <TableRow key={group.id}>
             <TableCell className="font-medium">{group.name}</TableCell>
-            <TableCell className="text-muted-foreground">{group.description}</TableCell>
-            <TableCell className="text-muted-foreground">{group.memberCount}</TableCell>
+            <TableCell className="text-muted-foreground">{group.id}</TableCell>
             <TableCell>
-              <Badge variant={roleVariant[group.defaultRole]} className="capitalize">
-                {group.defaultRole}
-              </Badge>
+              <GroupMembersDialog groupId={group.id} groupName={group.name} />
             </TableCell>
-            <TableCell className="text-right">
-              <div className="flex justify-end gap-1">
-                <GroupPermissionsDialog group={group} />
-                <EditGroupDialog group={group} />
-                {/* TODO: wire up remove-group action */}
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={`Remove ${group.name}`}
-                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <Trash2Icon />
-                </Button>
-              </div>
+            <TableCell>
+              <AddUserToGroupDialog groupId={group.id} groupName={group.name} />
             </TableCell>
           </TableRow>
         ))}

@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { UserPlusIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -15,18 +17,40 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { mockGroups } from "@/lib/mock-data";
 
 export function CreateUserDialog() {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? "Failed to invite user.");
+      }
+      setEmail("");
+      setOpen(false);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to invite user.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
           <Button>
@@ -41,39 +65,30 @@ export function CreateUserDialog() {
           <DialogDescription>Invite a new user to this site.</DialogDescription>
         </DialogHeader>
 
-        <form className="grid gap-4">
-          <div className="grid gap-1.5">
-            <Label htmlFor="user-name">Display name</Label>
-            <Input id="user-name" name="displayName" placeholder="e.g. Jordan Lee" />
-          </div>
+        <form className="grid gap-4" onSubmit={handleSubmit}>
           <div className="grid gap-1.5">
             <Label htmlFor="user-email">Email</Label>
-            <Input id="user-email" name="email" type="email" placeholder="jordan.lee@example.com" />
+            <Input
+              id="user-email"
+              name="email"
+              type="email"
+              placeholder="jordan.lee@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="user-group">Group</Label>
-            <Select>
-              <SelectTrigger id="user-group" className="w-full">
-                <SelectValue placeholder="Select a group" />
-              </SelectTrigger>
-              <SelectContent>
-                {mockGroups.map((group) => (
-                  <SelectItem key={group.id} value={group.id}>
-                    {group.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </form>
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
-        <DialogFooter>
-          <DialogClose render={<Button type="button" variant="outline" />}>
-            Cancel
-          </DialogClose>
-          {/* TODO: wire up create-user mutation */}
-          <Button type="submit">Send Invite</Button>
-        </DialogFooter>
+          <DialogFooter>
+            <DialogClose render={<Button type="button" variant="outline" />}>
+              Cancel
+            </DialogClose>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "Sending..." : "Send Invite"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

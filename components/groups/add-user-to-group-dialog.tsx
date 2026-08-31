@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { UsersRoundIcon } from "lucide-react";
+import { UserPlusIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,13 +17,16 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 
-export function CreateGroupDialog() {
+interface AddUserToGroupDialogProps {
+  groupId: string;
+  groupName: string;
+}
+
+export function AddUserToGroupDialog({ groupId, groupName }: AddUserToGroupDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+  const [accountId, setAccountId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,20 +36,19 @@ export function CreateGroupDialog() {
     setError(null);
     try {
       const res = await fetch("/api/groups", {
-        method: "POST",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description }),
+        body: JSON.stringify({ groupId, userIds: [accountId] }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Failed to create group.");
+        throw new Error(body.error ?? "Failed to add user to group.");
       }
-      setName("");
-      setDescription("");
+      setAccountId("");
       setOpen(false);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create group.");
+      setError(err instanceof Error ? err.message : "Failed to add user to group.");
     } finally {
       setSubmitting(false);
     }
@@ -56,41 +58,27 @@ export function CreateGroupDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button>
-            <UsersRoundIcon />
-            Create Group
+          <Button variant="ghost" size="icon-sm" aria-label={`Add user to ${groupName}`}>
+            <UserPlusIcon />
           </Button>
         }
       />
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create Group</DialogTitle>
-          <DialogDescription>
-            Groups let you assign permissions to many users at once.
-          </DialogDescription>
+          <DialogTitle>Add User to {groupName}</DialogTitle>
+          <DialogDescription>Add a user to this group by their Confluence account ID.</DialogDescription>
         </DialogHeader>
 
         <form className="grid gap-4" onSubmit={handleSubmit}>
           <div className="grid gap-1.5">
-            <Label htmlFor="group-name">Name</Label>
+            <Label htmlFor={`add-user-account-id-${groupId}`}>User account ID</Label>
             <Input
-              id="group-name"
-              name="name"
-              placeholder="e.g. design-team"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              id={`add-user-account-id-${groupId}`}
+              name="accountId"
+              placeholder="Confluence account ID"
+              value={accountId}
+              onChange={(e) => setAccountId(e.target.value)}
               required
-            />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="group-description">Description</Label>
-            <Textarea
-              id="group-description"
-              name="description"
-              placeholder="What is this group for?"
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
             />
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
@@ -99,8 +87,8 @@ export function CreateGroupDialog() {
             <DialogClose render={<Button type="button" variant="outline" />}>
               Cancel
             </DialogClose>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? "Creating..." : "Create Group"}
+            <Button type="submit" disabled={submitting || !accountId}>
+              {submitting ? "Adding..." : "Add User"}
             </Button>
           </DialogFooter>
         </form>

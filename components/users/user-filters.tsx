@@ -8,9 +8,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { mockGroups } from "@/lib/mock-data";
+import type { Group } from "@/lib/confluence/groups";
 
-export function UserFilters() {
+export function UserFilters({ groups = [] }: { groups: Group[] }) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
       <div className="relative flex-1 sm:max-w-xs">
@@ -27,7 +27,7 @@ export function UserFilters() {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All groups</SelectItem>
-          {mockGroups.map((group) => (
+          {groups.map((group) => (
             <SelectItem key={group.id} value={group.id}>
               {group.name}
             </SelectItem>

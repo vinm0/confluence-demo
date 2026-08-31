@@ -1,9 +1,8 @@
 import type {
   ConfluenceGroup,
   ConfluencePage,
-  ConfluenceUser,
   Permission,
-  Workspace,
+  ConfluenceSpace,
 } from "@/types/domain";
 
 /**
@@ -12,7 +11,7 @@ import type {
  * business logic is implemented.
  */
 
-export const mockWorkspaces: Workspace[] = [
+export const mockWorkspaces: ConfluenceSpace[] = [
   {
     id: "ws-1",
     key: "ENG",
@@ -136,49 +135,6 @@ export const mockGroups: ConfluenceGroup[] = [
   },
 ];
 
-export const mockUsers: ConfluenceUser[] = [
-  {
-    id: "usr-1",
-    displayName: "Priya Natarajan",
-    email: "priya.natarajan@example.com",
-    groupNames: ["engineering-team", "site-admins"],
-    status: "active",
-    lastActiveAt: "2026-08-29",
-  },
-  {
-    id: "usr-2",
-    displayName: "Marcus Webb",
-    email: "marcus.webb@example.com",
-    groupNames: ["product-team"],
-    status: "active",
-    lastActiveAt: "2026-08-28",
-  },
-  {
-    id: "usr-3",
-    displayName: "Dana Ellery",
-    email: "dana.ellery@example.com",
-    groupNames: ["confluence-users"],
-    status: "active",
-    lastActiveAt: "2026-08-20",
-  },
-  {
-    id: "usr-4",
-    displayName: "Sam Ochieng",
-    email: "sam.ochieng@example.com",
-    groupNames: ["engineering-team"],
-    status: "invited",
-    lastActiveAt: null,
-  },
-  {
-    id: "usr-5",
-    displayName: "Leah Fontaine",
-    email: "leah.fontaine@example.com",
-    groupNames: ["product-team", "confluence-users"],
-    status: "deactivated",
-    lastActiveAt: "2026-03-11",
-  },
-];
-
 export const mockPermissions: Permission[] = [
   { id: "perm-1", principalType: "group", principalName: "site-admins", role: "admin", source: "direct" },
   { id: "perm-2", principalType: "group", principalName: "engineering-team", role: "editor", source: "direct" },
@@ -186,7 +142,7 @@ export const mockPermissions: Permission[] = [
   { id: "perm-4", principalType: "group", principalName: "confluence-users", role: "viewer", source: "inherited" },
 ];
 
-export function getWorkspaceById(id: string): Workspace | undefined {
+export function getWorkspaceById(id: string): ConfluenceSpace | undefined {
   return mockWorkspaces.find((workspace) => workspace.id === id);
 }
 

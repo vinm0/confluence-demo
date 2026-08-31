@@ -30,7 +30,7 @@ export interface ConfluencePage {
   parentPageId: string | null;
 }
 
-export interface Workspace {
+export interface ConfluenceSpace {
   id: string;
   key: string;
   name: string;
